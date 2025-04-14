@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buy a Course</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      max-width: 600px;
+      margin: auto;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    .course {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    a {
+      color: #007bff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Available Courses</h1>
+  <div id="courses">Loading...</div>
+
+  <script>
+    // Load courses
+    fetch('/courses')
+      .then(res => res.json())
+      .then(courses => {
+        const container = document.getElementById('courses');
+        container.innerHTML = '';
+        courses.forEach(course => {
+          const div = document.createElement('div');
+          div.className = 'course';
+          div.innerHTML = `
+            <h2>${course.name}</h2>
+            <p>Price: ₹${course.price / 100}</p>
+            <button onclick="buyCourse(${course.course_id}, ${course.price})">Buy Now</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+
+    function buyCourse(course_id, amount) {
+      fetch('/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, course_id })
+      })
+      .then(res => res.json())
+      .then(order => {
+        const options = {
+          key: 'rzp_test_CXYxQoaBkZNEhh', // replace with your Razorpay test/live key
+          amount: order.amount,
+          currency: 'INR',
+          name: 'Course Payment',
+          description: 'Access your course instantly',
+          order_id: order.id,
+          handler: function (response) {
+            fetch('/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                course_id
+              })
+            })
+            .then(res => res.json())
+            .then(result => {
+              if (result.status === 'ok') {
+                const msg = document.createElement('div');
+                msg.innerHTML = `
+                  <h2>✅ Payment Successful!</h2>
+                  <p>Your course is ready. Click the link below to access it:</p>
+                  <p><a href="${result.course_link}" target="_blank">${result.course_link}</a></p>
+                `;
+                document.body.innerHTML = '';
+                document.body.appendChild(msg);
+              } else {
+                alert('Payment failed or course not found.');
+              }
+            });
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+      });
+    }
+  </script>
+</body>
+</html>
