@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Buy a Course</title>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      max-width: 600px;
+      margin: auto;
+      background: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    .course {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    a {
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .modal-content p.warning {
+      color: red;
+      font-weight: bold;
+    }
+
+    /* Spinner Styles */
+    .spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Contact Section */
+    .contact {
+      margin-top: 50px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .contact h3 {
+      margin-bottom: 10px;
+    }
+    .contact a {
+      color: #007bff;
+    }
+
+    input[type="email"] {
+      padding: 10px;
+      width: 90%;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .disabled-btn {
+      background: #aaa !important;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>Available Courses</h1>
+  <div id="courses">Loading...</div>
+
+  <div class="contact">
+    <h3>Need Help?</h3>
+    <p>If you do not receive the course link after payment, please contact us on Telegram:</p>
+    <p>
+      👉 <a href="https://telegramexaple.com" target="_blank">https://telegramexaple.com</a>
+    </p>
+    <p style="color: red; font-weight: bold;">
+      ⚠️ Please include a screenshot of your payment in your message else we won't be able to reply you back.
+    </p>
+  </div>
+
+  <script>
+    let userEmail = "";
+
+    fetch('/courses')
+      .then(res => res.json())
+      .then(courses => {
+        const container = document.getElementById('courses');
+        container.innerHTML = '';
+        courses.forEach(course => {
+          const div = document.createElement('div');
+          div.className = 'course';
+          div.innerHTML = `
+            <h2>${course.name}</h2>
+            <p>Price: ₹${course.price / 100}</p>
+            <button onclick="buyCourse(${course.course_id}, ${course.price})">Buy Now</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+
+    function buyCourse(course_id, amount) {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2>⚠️ Important Warning</h2>
+          <p>Make sure you have a stable internet connection.</p>
+          <p>Do not refresh the page during the payment process.</p>
+          <p class="warning">❗ Don't refresh before copying your course link after payment!</p>
+          <input type="email" id="user-email" placeholder="Enter your email address" />
+          <div style="margin-top: 20px;">
+            <button onclick="document.body.removeChild(this.closest('.modal'));">⬅ Go Back</button>
+            <button id="proceedBtn" class="disabled-btn" disabled>✅ Proceed to Payment</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      const emailInput = modal.querySelector('#user-email');
+      const proceedBtn = modal.querySelector('#proceedBtn');
+
+      emailInput.addEventListener('input', () => {
+        const email = emailInput.value.trim();
+        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        proceedBtn.disabled = !valid;
+        proceedBtn.classList.toggle('disabled-btn', !valid);
+        if (valid) userEmail = email;
+      });
+
+      proceedBtn.onclick = () => {
+        document.body.removeChild(modal);
+        proceedToPayment(course_id, amount);
+      };
+    }
+
+    function proceedToPayment(course_id, amount) {
+      fetch('/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, course_id })
+      })
+      .then(res => res.json())
+      .then(order => {
+        const options = {
+          key: 'rzp_test_CXYxQoaBkZNEhh', // Replace with your real key
+          amount: order.amount,
+          currency: 'INR',
+          name: 'Course Payment',
+          description: 'Access your course instantly',
+          order_id: order.id,
+          handler: function (response) {
+            const verifyingMsg = document.createElement('div');
+            verifyingMsg.innerHTML = `
+              <h2>🔄 Verifying Payment...</h2>
+              <div class="spinner"></div>
+              <p>Please wait while we confirm your payment.<br>Do not refresh the page.</p>
+            `;
+            document.body.innerHTML = '';
+            document.body.appendChild(verifyingMsg);
+
+            fetch('/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                course_id,
+                email: userEmail
+              })
+            })
+            .then(res => res.json())
+            .then(result => {
+              if (result.status === 'ok') {
+                // Redirect to payment success route
+                const url = `/payment-success?payment_id=${response.razorpay_payment_id}&course_id=${course_id}`;
+                window.location.href = url;
+              } else {
+                verifyingMsg.innerHTML = `
+                  <h2>❌ Payment Verification Failed</h2>
+                  <p>There was an issue verifying your payment. Please contact support or try again.</p>
+                `;
+              }
+            });
+          }
+        };
+        const rzp = new Razorpay(options);
+        rzp.open();
+      });
+    }
+  </script>
+</body>
+</html>
