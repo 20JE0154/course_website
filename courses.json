@@ -1,0 +1,17 @@
+[
+  {
+    "course_id": 1,
+    "name": "JavaScript Basics",
+    "price": 49900
+  },
+  {
+    "course_id": 2,
+    "name": "Node.js Mastery",
+    "price": 99900
+  },
+  {
+    "course_id": 3,
+    "name": "New Course",
+    "price": 40000
+  }
+]

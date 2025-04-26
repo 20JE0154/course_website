@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f7fb;
+      color: #333;
+      padding: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #0b3d91;
+      margin-bottom: 30px;
+    }
+
+    form {
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    input, button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #0b3d91;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #084080;
+    }
+
+    .back {
+      margin-top: 40px;
+      text-decoration: none;
+      color: #0b3d91;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Admin Panel</h1>
+
+  <!-- Add Course Form -->
+  <form id="add-form">
+    <h2>Add Course</h2>
+    <input type="text" name="name" placeholder="Course Name" required />
+    <input type="number" name="price" placeholder="Price (in paise)" required />
+    <input type="url" name="link" placeholder="Course Link" required />
+    <input type="password" name="secret" placeholder="Secret Code" required />
+    <button type="submit">Add Course</button>
+  </form>
+
+  <!-- Delete Course Form -->
+  <form id="delete-form">
+    <h2>Delete Course</h2>
+    <input type="number" name="course_id" placeholder="Course ID" required />
+    <input type="password" name="secret" placeholder="Secret Code" required />
+    <button type="submit">Delete Course</button>
+  </form>
+
+  <a href="/" class="back">← Back to Home</a>
+
+  <script>
+    document.getElementById('add-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const body = Object.fromEntries(formData);
+      const res = await fetch('/admin/add-course', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      alert(await res.text());
+    });
+
+    document.getElementById('delete-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const body = Object.fromEntries(formData);
+      const res = await fetch('/admin/delete-course', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      alert(await res.text());
+    });
+  </script>
+</body>
+</html>

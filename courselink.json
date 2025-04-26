@@ -1,0 +1,14 @@
+[
+  {
+    "course_id": 1,
+    "link": "https://example.com/course1"
+  },
+  {
+    "course_id": 2,
+    "link": "https://example.com/course2"
+  },
+  {
+    "course_id": 3,
+    "link": "https://example.com/course3"
+  }
+]
